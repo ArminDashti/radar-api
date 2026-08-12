@@ -5,3 +5,5 @@ radar-api
 coverage.out
 .idea/
 .vscode/
+
+# github-commit-push-all: auto-ignore large files (>5MB)
