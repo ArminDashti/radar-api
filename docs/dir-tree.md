@@ -8,7 +8,7 @@ internal/config/config_test.go     # Tests configuration behavior
 internal/db/db.go                  # Connects, migrates, and seeds database
 internal/handlers/agent.go         # Handles agent target and sample routes
 internal/handlers/auth.go          # Handles WebUI login
-internal/handlers/endpoints.go     # Handles endpoint routes
+internal/handlers/hosts.go         # Handles host routes
 internal/handlers/grid.go          # Builds hierarchical latency grids
 internal/handlers/middleware.go    # Auth middleware and server dependencies
 internal/handlers/probes.go        # Handles probe listing

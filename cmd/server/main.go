@@ -38,7 +38,7 @@ func main() {
 	router := gin.New()
 	router.Use(gin.Logger(), gin.Recovery(), cors.New(cors.Config{
 		AllowOrigins:     cfg.CORSOrigins,
-		AllowMethods:     []string{http.MethodGet, http.MethodPost, http.MethodOptions},
+		AllowMethods:     []string{http.MethodGet, http.MethodPost, http.MethodPut, http.MethodOptions},
 		AllowHeaders:     []string{"Authorization", "Content-Type"},
 		AllowCredentials: true,
 		MaxAge:           12 * time.Hour,
@@ -49,9 +49,10 @@ func main() {
 	web := api.Group("")
 	web.Use(server.WebAuth())
 	web.GET("/probes", server.ListProbes)
-	web.GET("/endpoints", server.ListEndpoints)
-	web.POST("/endpoints", server.CreateEndpoint)
-	web.GET("/grid/endpoints", server.EndpointGrid)
+	web.GET("/hosts", server.ListHosts)
+	web.POST("/hosts", server.CreateHost)
+	web.PUT("/hosts/:id", server.UpdateHost)
+	web.GET("/grid/hosts", server.HostGrid)
 	web.GET("/grid/probes", server.ProbeGrid)
 	agent := api.Group("/agent")
 	agent.Use(server.AgentAuth())

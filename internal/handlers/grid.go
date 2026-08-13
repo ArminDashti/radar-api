@@ -3,6 +3,7 @@ package handlers
 import (
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/ArminDashti/radar-api/internal/models"
@@ -17,24 +18,19 @@ type aggregate struct {
 	OK        bool
 }
 
-func (s *Server) EndpointGrid(c *gin.Context) {
+func (s *Server) HostGrid(c *gin.Context) {
 	interval, protocol, ok := gridParameters(c)
 	if !ok {
 		return
 	}
-	probe := c.DefaultQuery("probe", "all")
-	if probe != "all" {
-		var exists bool
-		if err := s.Pool.QueryRow(requestContext(c),
-			`SELECT EXISTS(SELECT 1 FROM probes WHERE code = $1)`, probe).Scan(&exists); err != nil || !exists {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "unknown probe"})
-			return
-		}
+	allProbes, codes, ok := s.parseProbeFilter(c)
+	if !ok {
+		return
 	}
 
-	rows, err := s.endpointGridRows(c, protocol, probe, interval)
+	rows, err := s.hostGridRows(c, protocol, allProbes, codes, interval)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "could not build endpoint grid"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "could not build host grid"})
 		return
 	}
 	c.JSON(http.StatusOK, makeGridResponse(interval, protocol, rows))
@@ -67,20 +63,43 @@ func gridParameters(c *gin.Context) (rollup.Interval, string, bool) {
 	return interval, protocol, true
 }
 
-func (s *Server) endpointGridRows(c *gin.Context, protocol, probe string, interval rollup.Interval) ([]models.GridRow, error) {
+func (s *Server) parseProbeFilter(c *gin.Context) (all bool, codes []string, ok bool) {
+	raw, present := c.GetQuery("probe")
+	if !present || strings.TrimSpace(raw) == "all" {
+		return true, []string{}, true
+	}
+	seen := make(map[string]struct{})
+	for _, part := range strings.Split(raw, ",") {
+		code := strings.TrimSpace(part)
+		if code == "" || code == "all" {
+			continue
+		}
+		if _, exists := seen[code]; exists {
+			continue
+		}
+		seen[code] = struct{}{}
+		codes = append(codes, code)
+	}
+	if len(codes) == 0 {
+		return false, []string{}, true
+	}
+	var count int
+	if err := s.Pool.QueryRow(requestContext(c),
+		`SELECT COUNT(*) FROM probes WHERE code = ANY($1)`, codes).Scan(&count); err != nil || count != len(codes) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "unknown probe"})
+		return false, nil, false
+	}
+	return false, codes, true
+}
+
+func (s *Server) hostGridRows(c *gin.Context, protocol string, allProbes bool, codes []string, interval rollup.Interval) ([]models.GridRow, error) {
 	metadata, err := s.Pool.Query(requestContext(c), `
 		SELECT e.id, e.name, COALESCE(p.flag_icon, ''), COALESCE(p.code, '')
 		FROM endpoints e
 		LEFT JOIN probes p ON p.id = e.probe_id
 		WHERE e.active
 		  AND (($1 = 'http' AND e.http_enabled) OR ($1 = 'icmp' AND e.icmp_enabled))
-		  AND ($2 = 'all' OR p.code = $2 OR EXISTS (
-			SELECT 1 FROM samples sx
-			JOIN agents ax ON ax.id = sx.agent_id
-			JOIN probes px ON px.id = ax.probe_id
-			WHERE sx.endpoint_id = e.id AND px.code = $2
-		  ))
-		ORDER BY e.id`, protocol, probe)
+		ORDER BY e.id`, protocol)
 	if err != nil {
 		return nil, err
 	}
@@ -101,9 +120,9 @@ func (s *Server) endpointGridRows(c *gin.Context, protocol, probe string, interv
 		JOIN agents a ON a.id = s.agent_id
 		JOIN probes agent_probe ON agent_probe.id = a.probe_id
 		WHERE s.protocol = $1 AND s.observed_at >= $2
-		  AND ($3 = 'all' OR agent_probe.code = $3)
+		  AND ($3::boolean OR agent_probe.code = ANY($4))
 		GROUP BY s.endpoint_id, date_trunc('minute', s.observed_at)`
-	aggregates, err := s.queryAggregates(c, interval, base, protocol, interval.Start(time.Now()), probe)
+	aggregates, err := s.queryAggregates(c, interval, base, protocol, interval.Start(time.Now()), allProbes, codes)
 	if err != nil {
 		return nil, err
 	}

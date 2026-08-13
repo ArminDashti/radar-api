@@ -76,7 +76,7 @@ func (s *Server) AgentSamples(c *gin.Context) {
 			return
 		}
 		if result.RowsAffected() == 0 {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "endpoint is inactive or protocol is disabled"})
+			c.JSON(http.StatusBadRequest, gin.H{"error": "host is inactive or protocol is disabled"})
 			return
 		}
 	}

@@ -36,9 +36,10 @@ Public:
 JWT bearer authentication:
 
 - `GET /api/probes`
-- `GET /api/endpoints`
-- `POST /api/endpoints`
-- `GET /api/grid/endpoints?interval=minutes&protocol=http&probe=all`
+- `GET /api/hosts`
+- `POST /api/hosts`
+- `PUT /api/hosts/:id`
+- `GET /api/grid/hosts?interval=minutes&protocol=http&probe=all`
 - `GET /api/grid/probes?interval=hours&protocol=icmp`
 
 Agent bearer authentication:
@@ -46,7 +47,7 @@ Agent bearer authentication:
 - `GET /api/agent/targets`
 - `POST /api/agent/samples`
 
-Intervals support `minutes`, `hours`, `days`, and `months`. Protocols support `http` and `icmp`. Sample timestamps are normalized to UTC minute buckets, and duplicate submissions update the existing minute sample.
+Intervals support `minutes`, `hours`, `days`, and `months`. Protocols support `http` and `icmp`. The host grid `probe` query accepts `all` or a comma-separated list of probe codes; each square is the average latency of the selected probes. Sample timestamps are normalized to UTC minute buckets, and duplicate submissions update the existing minute sample.
 
 Example login:
 
