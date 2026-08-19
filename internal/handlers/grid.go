@@ -94,7 +94,7 @@ func (s *Server) parseProbeFilter(c *gin.Context) (all bool, codes []string, ok 
 
 func (s *Server) hostGridRows(c *gin.Context, protocol string, allProbes bool, codes []string, interval rollup.Interval) ([]models.GridRow, error) {
 	metadata, err := s.Pool.Query(requestContext(c), `
-		SELECT e.id, e.name, COALESCE(p.flag_icon, ''), COALESCE(p.code, '')
+		SELECT e.id, e.name, COALESCE(e.logo_icon, ''), COALESCE(p.code, '')
 		FROM endpoints e
 		LEFT JOIN probes p ON p.id = e.probe_id
 		WHERE e.active

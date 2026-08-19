@@ -24,6 +24,8 @@ CREATE TABLE IF NOT EXISTS endpoints (
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+ALTER TABLE endpoints ADD COLUMN IF NOT EXISTS logo_icon TEXT NOT NULL DEFAULT '';
+
 CREATE TABLE IF NOT EXISTS agents (
     id BIGSERIAL PRIMARY KEY,
     name TEXT NOT NULL UNIQUE,
@@ -52,18 +54,71 @@ CREATE INDEX IF NOT EXISTS samples_grid_idx
     ON samples (protocol, observed_at, endpoint_id, agent_id);
 
 INSERT INTO probes (code, name, flag_icon) VALUES
-    ('probe1', 'Helsinki', '/flags/probe1.svg'),
-    ('probe2', 'Frankfurt', '/flags/probe2.svg'),
-    ('probe3', 'Tehran', '/flags/probe3.svg')
+    ('probe1', 'Irancell', '/flags/probe1.svg')
 ON CONFLICT (code) DO UPDATE
 SET name = EXCLUDED.name, flag_icon = EXCLUDED.flag_icon;
 
-INSERT INTO endpoints (name, host, http_enabled, icmp_enabled, probe_id, active)
-SELECT seed.name, seed.host, true, true, p.id, true
+UPDATE endpoints SET probe_id = (SELECT id FROM probes WHERE code = 'probe1');
+UPDATE agents SET probe_id = (SELECT id FROM probes WHERE code = 'probe1');
+DELETE FROM probes WHERE code IN ('probe2', 'probe3');
+
+INSERT INTO endpoints (name, host, http_enabled, icmp_enabled, probe_id, active, logo_icon)
+SELECT seed.name, seed.host, seed.http_enabled, seed.icmp_enabled, p.id, true, seed.logo_icon
 FROM (VALUES
-    ('google.com', 'google.com', 'probe1'),
-    ('cloudflare.com 1.1.1.1', '1.1.1.1', 'probe2'),
-    ('github.com', 'github.com', 'probe3')
-) AS seed(name, host, probe_code)
-JOIN probes p ON p.code = seed.probe_code
+    ('Google', 'google.com', true, false, '/logos/google.svg'),
+    ('GitHub', 'github.com', true, false, '/logos/github.svg'),
+    ('1.1.1.1', '1.1.1.1', false, true, '/logos/cloudflare.svg'),
+    ('8.8.8.8', '8.8.8.8', false, true, '/logos/google-dns.svg'),
+    ('YouTube', 'youtube.com', true, false, '/logos/youtube.svg'),
+    ('ChatGPT', 'chatgpt.com', true, false, '/logos/chatgpt.svg'),
+    ('Claude', 'claude.ai', true, false, '/logos/claude.svg'),
+    ('DeepSeek', 'deepseek.com', true, false, '/logos/deepseek.svg'),
+    ('Microsoft', 'microsoft.com', true, false, '/logos/microsoft.svg'),
+    ('Apple', 'apple.com', true, false, '/logos/apple.svg'),
+    ('Play Store', 'play.google.com', true, false, '/logos/play-store.svg'),
+    ('App Store', 'apps.apple.com', true, false, '/logos/app-store.svg'),
+    ('Docker', 'docker.com', true, false, '/logos/docker.svg'),
+    ('Spotify', 'spotify.com', true, false, '/logos/spotify.svg'),
+    ('Grok', 'grok.com', true, false, '/logos/grok.svg'),
+    ('Arena.ai', 'arena.ai', true, false, '/logos/arena.svg'),
+    ('Ondpline.com', 'ondpline.com', true, false, '/logos/ondpline.svg')
+) AS seed(name, host, http_enabled, icmp_enabled, logo_icon)
+JOIN probes p ON p.code = 'probe1'
 WHERE NOT EXISTS (SELECT 1 FROM endpoints e WHERE e.host = seed.host);
+
+UPDATE endpoints e SET
+    name = seed.name,
+    http_enabled = seed.http_enabled,
+    icmp_enabled = seed.icmp_enabled,
+    probe_id = p.id,
+    active = true,
+    logo_icon = seed.logo_icon
+FROM (VALUES
+    ('Google', 'google.com', true, false, '/logos/google.svg'),
+    ('GitHub', 'github.com', true, false, '/logos/github.svg'),
+    ('1.1.1.1', '1.1.1.1', false, true, '/logos/cloudflare.svg'),
+    ('8.8.8.8', '8.8.8.8', false, true, '/logos/google-dns.svg'),
+    ('YouTube', 'youtube.com', true, false, '/logos/youtube.svg'),
+    ('ChatGPT', 'chatgpt.com', true, false, '/logos/chatgpt.svg'),
+    ('Claude', 'claude.ai', true, false, '/logos/claude.svg'),
+    ('DeepSeek', 'deepseek.com', true, false, '/logos/deepseek.svg'),
+    ('Microsoft', 'microsoft.com', true, false, '/logos/microsoft.svg'),
+    ('Apple', 'apple.com', true, false, '/logos/apple.svg'),
+    ('Play Store', 'play.google.com', true, false, '/logos/play-store.svg'),
+    ('App Store', 'apps.apple.com', true, false, '/logos/app-store.svg'),
+    ('Docker', 'docker.com', true, false, '/logos/docker.svg'),
+    ('Spotify', 'spotify.com', true, false, '/logos/spotify.svg'),
+    ('Grok', 'grok.com', true, false, '/logos/grok.svg'),
+    ('Arena.ai', 'arena.ai', true, false, '/logos/arena.svg'),
+    ('Ondpline.com', 'ondpline.com', true, false, '/logos/ondpline.svg')
+) AS seed(name, host, http_enabled, icmp_enabled, logo_icon)
+JOIN probes p ON p.code = 'probe1'
+WHERE e.host = seed.host;
+
+UPDATE endpoints SET active = false
+WHERE host NOT IN (
+    'google.com', 'github.com', '1.1.1.1', '8.8.8.8', 'youtube.com',
+    'chatgpt.com', 'claude.ai', 'deepseek.com', 'microsoft.com', 'apple.com',
+    'play.google.com', 'apps.apple.com', 'docker.com', 'spotify.com',
+    'grok.com', 'arena.ai', 'ondpline.com'
+);
