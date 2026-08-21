@@ -11,7 +11,7 @@ import (
 func (s *Server) AgentTargets(c *gin.Context) {
 	rows, err := s.Pool.Query(requestContext(c), `
 		SELECT id, name, host, http_enabled, icmp_enabled
-		FROM endpoints WHERE active ORDER BY id`)
+		FROM endpoints WHERE active ORDER BY lower(name), id`)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "could not list targets"})
 		return

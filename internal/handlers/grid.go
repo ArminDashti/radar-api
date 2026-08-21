@@ -99,7 +99,7 @@ func (s *Server) hostGridRows(c *gin.Context, protocol string, allProbes bool, c
 		LEFT JOIN probes p ON p.id = e.probe_id
 		WHERE e.active
 		  AND (($1 = 'http' AND e.http_enabled) OR ($1 = 'icmp' AND e.icmp_enabled))
-		ORDER BY e.id`, protocol)
+		ORDER BY lower(e.name), e.id`, protocol)
 	if err != nil {
 		return nil, err
 	}

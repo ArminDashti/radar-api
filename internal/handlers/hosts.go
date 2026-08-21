@@ -43,7 +43,7 @@ func scanHost(row interface {
 func (s *Server) ListHosts(c *gin.Context) {
 	rows, err := s.Pool.Query(requestContext(c), `
 		SELECT id, name, host, http_enabled, icmp_enabled, probe_id, active, created_at
-		FROM endpoints ORDER BY id`)
+		FROM endpoints ORDER BY lower(name), id`)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "could not list hosts"})
 		return

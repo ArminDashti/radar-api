@@ -12,7 +12,7 @@ docker compose up -d
 go run ./cmd/server
 ```
 
-Postgres is published on host port **5436** (`DATABASE_URL` in `.env.example`). The server runs at `http://localhost:8088`. Startup applies `migrations/001_init.sql`, creates the demo credentials, and inserts two hours of sample history. Seeding is idempotent. The seed probe is **Irancell** (`probe1`). Seeded sites: Google, GitHub, 1.1.1.1, 8.8.8.8, YouTube, ChatGPT, Claude, DeepSeek, Microsoft, Apple, Play Store, App Store, Docker, Spotify, Grok, Arena.ai, and Ondpline.com. Named hosts enable HTTP; the two IP addresses enable ICMP.
+Postgres is published on host port **5436** (`DATABASE_URL` in `.env.example`). The server runs at `http://localhost:8088`. Startup applies `migrations/001_init.sql`, creates the demo credentials, and inserts two hours of sample history. Seeding is idempotent. The seed probe is **Irancell** (`probe1`). Seeded sites: Google, GitHub, 1.1.1.1, 8.8.8.8, YouTube, ChatGPT, Claude, DeepSeek, Microsoft, Apple, Play Store, App Store, Docker, Spotify, Grok, Arena.ai, Ondpline.com, GitLab, digikala.ir, snapp.ir, tapsi.ir, divar.ir, bale.ai, Devin AI, Neshan.org, Wikipedia, WhatsApp, zoomit.ir, digiato.ir, Let's Encrypt, Steam, torob.ir, PlayStation, Xbox, Gmail, Figma, Windows Update, Bing, aparat.ir, PyPI, npm, WordPress, Go modules, crates.io, VS Code, NuGet, Instagram, and Telegram. Named hosts enable HTTP; the two IP addresses enable ICMP.
 
 WebUI login:
 
