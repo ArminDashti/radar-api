@@ -7,3 +7,5 @@ coverage.out
 .vscode/
 
 # github-commit-push-all: auto-ignore large files (>5MB)
+
+# AUTO-IGNORE-LARGE-FILES (>5MB) â€” managed by github-commit-push-all

@@ -1,0 +1,95 @@
+# Local Docker hot-reload: Postgres + Go Air API + Go Air agent + Vite WebUI (bind mounts).
+# Usage: docker compose -f docker-compose.local.yml -p radar-local up -d --force-recreate
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: radar
+      POSTGRES_PASSWORD: radar
+      POSTGRES_DB: radar
+    ports:
+      - "5436:5432"
+    volumes:
+      - radar-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U radar -d radar"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    image: golang:1.23-alpine
+    restart: unless-stopped
+    working_dir: /app
+    environment:
+      DATABASE_URL: postgres://radar:radar@postgres:5432/radar?sslmode=disable
+      JWT_SECRET: change-me-radar-jwt
+      PORT: "8088"
+      CORS_ORIGINS: http://localhost:5174,http://127.0.0.1:5174,http://localhost:5173,http://127.0.0.1:5173
+      GIN_MODE: debug
+      GOTOOLCHAIN: auto
+    command:
+      - sh
+      - -c
+      - apk add --no-cache git gcc musl-dev && go install github.com/air-verse/air@v1.61.7 && air -c .air.toml
+    volumes:
+      - .:/app
+      - radar-gomod:/go/pkg/mod
+      - radar-gotmp:/app/tmp
+    ports:
+      - "8088:8088"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  agent:
+    image: golang:1.24-alpine
+    restart: unless-stopped
+    working_dir: /app
+    environment:
+      RADAR_HUB_URL: http://api:8088
+      RADAR_AGENT_TOKEN: radar-demo-agent-token-probe1
+      RADAR_HTTP_TIMEOUT_SEC: "5"
+      RADAR_ICMP_TIMEOUT_SEC: "3"
+      GOTOOLCHAIN: auto
+    cap_add:
+      - NET_RAW
+    command:
+      - sh
+      - -c
+      - apk add --no-cache git gcc musl-dev iputils && go install github.com/air-verse/air@v1.61.7 && air -c .air.toml
+    volumes:
+      - ../radar-agent:/app
+      - radar-agent-gomod:/go/pkg/mod
+      - radar-agent-gotmp:/app/tmp
+    depends_on:
+      - api
+
+  webui:
+    image: node:22-alpine
+    restart: unless-stopped
+    working_dir: /app
+    environment:
+      CHOKIDAR_USEPOLLING: "true"
+      WATCHPACK_POLLING: "true"
+      VITE_API_PROXY: http://api:8088
+    command:
+      - sh
+      - -c
+      - npm install && npm run dev -- --host 0.0.0.0 --port 5173 --strictPort
+    volumes:
+      - ../radar-webui:/app
+      - radar-webui-node-modules:/app/node_modules
+    ports:
+      - "5174:5173"
+    depends_on:
+      - api
+
+volumes:
+  radar-postgres-data:
+  radar-gomod:
+  radar-gotmp:
+  radar-agent-gomod:
+  radar-agent-gotmp:
+  radar-webui-node-modules:
