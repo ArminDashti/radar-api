@@ -8,8 +8,9 @@ services:
       POSTGRES_USER: radar
       POSTGRES_PASSWORD: radar
       POSTGRES_DB: radar
+      POSTGRES_HOST_AUTH_METHOD: trust
     ports:
-      - "5436:5432"
+      - "5443:5432"
     volumes:
       - radar-postgres-data:/var/lib/postgresql/data
     healthcheck:
@@ -26,7 +27,7 @@ services:
       DATABASE_URL: postgres://radar:radar@postgres:5432/radar?sslmode=disable
       JWT_SECRET: change-me-radar-jwt
       PORT: "8088"
-      CORS_ORIGINS: http://localhost:5174,http://127.0.0.1:5174,http://localhost:5173,http://127.0.0.1:5173
+      CORS_ORIGINS: http://localhost:5184,http://127.0.0.1:5184,http://localhost:5173,http://127.0.0.1:5173
       GIN_MODE: debug
       GOTOOLCHAIN: auto
     command:
@@ -72,17 +73,22 @@ services:
     working_dir: /app
     environment:
       CHOKIDAR_USEPOLLING: "true"
+      VITE_BASE_PATH: "/radar/"
+      VITE_HMR_CLIENT_PORT: "80"
       WATCHPACK_POLLING: "true"
       VITE_API_PROXY: http://api:8088
     command:
       - sh
       - -c
-      - npm install && npm run dev -- --host 0.0.0.0 --port 5173 --strictPort
+      - rm -rf /app/node_modules/* /app/node_modules/.[!.]* 2>/dev/null; npm install && npm run dev -- --host 0.0.0.0 --port 5173 --strictPort
     volumes:
       - ../radar-webui:/app
       - radar-webui-node-modules:/app/node_modules
     ports:
-      - "5174:5173"
+      - "5184:5173"
+    networks:
+      - default
+      - pc-armin-local
     depends_on:
       - api
 
@@ -93,3 +99,7 @@ volumes:
   radar-agent-gomod:
   radar-agent-gotmp:
   radar-webui-node-modules:
+
+networks:
+  pc-armin-local:
+    external: true

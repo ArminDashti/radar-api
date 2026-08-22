@@ -60,7 +60,7 @@ func main() {
 	agent.POST("/samples", server.AgentSamples)
 
 	log.Printf("radar API listening on :%s", cfg.Port)
-	if err := router.Run(":" + cfg.Port); err != nil {
+	if err := router.Run("0.0.0.0:" + cfg.Port); err != nil {
 		log.Fatal(err)
 	}
 }
